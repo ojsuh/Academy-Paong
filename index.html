@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="id" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy Paong - Pembelajaran Berbasis Paong 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Memuat Three.js untuk grafis 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Menggunakan font Inter dari Google Fonts untuk tampilan yang bersih (untuk logo loading) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #3b82f6; /* Tailwind blue-500/600 */
+            --secondary: #8b5cf6; /* Tailwind purple-500/600 */
+            --dark: #1e293b; /* Tailwind slate-800 */
+            --light: #f8fafc; /* Tailwind slate-50 */
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe); /* Light, modern gradient */
+            color: #1e293b; /* Dark text for light mode */
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            transition: all 0.3s ease; /* Smooth transition for theme change */
+        }
+        
+        body.rtl {
+            direction: rtl;
+        }
+        
+        /* Dark mode styles */
+        .dark body {
+            background: linear-gradient(135deg, #0f172a, #1e293b); /* Darker gradient */
+            color: #f8fafc; /* Light text for dark mode */
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+        
+        /* Card hover effect */
+        .course-card {
+            transition: all 0.3s ease;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        /* AI response animation */
+        .ai-response-content {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Loading spinner animation */
+        .loading-spinner {
+            border: 4px solid rgba(59, 130, 246, 0.2);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Floating elements for hero section */
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        /* Text gradient */
+        .gradient-text {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Section visibility management with transition */
+        .section-hidden {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .section-visible { /* New class to manage visibility and animation */
+            display: block;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* Chat bubble for AI assistant */
+        .chat-bubble {
+            position: relative;
+            border-radius: 24px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            max-width: 80%;
+            background-color: #dbeafe; /* Light blue for chat bubble */
+        }
+        
+        .dark .chat-bubble {
+            background-color: #1e293b; /* Dark slate for dark mode chat bubble */
+        }
+        
+        .chat-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 30px;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #dbeafe transparent transparent; /* Matches light mode bubble */
+        }
+        
+        .dark .chat-bubble::after {
+            border-color: #1e293b transparent transparent; /* Matches dark mode bubble */
+        }
+        
+        /* Language selector styling */
+        .language-selector {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            appearance: none; /* Remove default select arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em;
+            padding-right: 2.5rem; /* Space for custom arrow */
+        }
+        
+        .rtl .language-selector {
+            padding-left: 2.5rem;
+            padding-right: 12px;
+            background-position: left 0.5rem center;
+        }
+        
+        .flag-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 50%;
+            background-size: cover;
+        }
+        
+        .rtl .flag-icon {
+            margin-right: 0;
+            margin-left: 8px;
+        }
+        
+        /* Course content markdown styling */
+        .course-content {
+            line-height: 1.8;
+            /* Tailwind Prose classes will handle most of this */
+        }
+        
+        /* API Status Indicator */
+        .api-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .api-status.connected {
+            background-color: rgba(46, 204, 113, 0.9); /* Green */
+            color: white;
+        }
+        
+        .api-status.disconnected {
+            background-color: rgba(231, 76, 60, 0.9); /* Red */
+            color: white;
+        }
+        
+        .api-status.pending {
+            background-color: rgba(241, 196, 15, 0.9); /* Yellow */
+            color: white;
+        }
+
+        /* Discord Ad Styling */
+        .discord-ad {
+            background: linear-gradient(135deg, #7289da, #99aab5); /* Discord colors */
+            color: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            margin-top: 4rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .discord-ad:hover {
+            animation: none;
+            transform: scale(1.02);
+            transition: transform 0.3s ease;
+        }
+        .discord-ad .btn-discord {
+            background-color: #5865f2; /* Darker Discord blue */
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 9999px; /* Full rounded */
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+        .discord-ad .btn-discord:hover {
+            background-color: #4e5ad6;
+        }
+
+        /* Override Tailwind Prose for dark mode */
+        .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4, .dark .prose h5, .dark .prose h6 {
+            color: #f8fafc; /* Light text for headings in dark mode */
+        }
+        .dark .prose p, .dark .prose li, .dark .prose strong {
+            color: #e2e8f0; /* Lighter text for content in dark mode */
+        }
+        .dark .prose code {
+            background-color: #334155; /* Darker background for code in dark mode */
+            color: #f8fafc;
+        }
+        .dark .prose a {
+            color: #93c5fd; /* Light blue links in dark mode */
+        }
+
+        /* Chatbot iframe specific styles */
+        .chatbot-iframe-container {
+            width: 100%;
+            height: calc(100vh - 180px); /* Adjust height to fit screen, accounting for header/footer */
+            max-height: 800px; /* Max height for larger screens */
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            background-color: #fff; /* Fallback background */
+        }
+        .chatbot-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Loading Screen Styles */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a202c; /* Dark background for loading */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* Ensure it's on top */
+            opacity: 1;
+            transition: opacity 0.8s ease-out; /* Slower fade out */
+        }
+
+        #loadingScreen.hidden {
+            opacity: 0;
+            pointer-events: none; /* Allow clicks through once hidden */
+        }
+
+        /* Canvas for Three.js in loading screen */
+        #loading-bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Loading content container */
+        #loading-content-container {
+            position: relative; /* To be above the canvas */
+            z-index: 2;
+            text-align: center;
+            color: white; /* Default text color for loading screen */
+        }
+
+        /* SVG Logo styling for loading screen */
+        .loading-logo-svg {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 1rem;
+        }
+
+        .logo-circle {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw-circle 2s ease-in-out forwards;
+        }
+
+        .logo-text {
+            opacity: 0;
+            animation: fade-in 1s ease-in forwards 1.5s;
+        }
+        
+        /* Keyframes for SVG circle drawing animation */
+        @keyframes draw-circle {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Keyframes for SVG text fade-in animation */
+        @keyframes fade-in {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Main text "Academy Paong" and "By Paong" styling */
+        .main-text-container {
+            position: relative;
+            margin-top: 1rem;
+        }
+
+        .main-text-container span {
+            opacity: 0;
+            position: relative;
+            top: 10px;
+            animation: text-pop-in 0.5s ease-out forwards;
+        }
+
+        /* Keyframes for animation for text appearing one by one */
+        @keyframes text-pop-in {
+            to {
+                opacity: 1;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <!-- Canvas untuk Latar Belakang 3D di Loading Screen -->
+        <canvas id="loading-bg-canvas"></canvas>
+
+        <!-- Kontainer untuk Animasi Loading di Tengah -->
+        <div id="loading-content-container">
+            <!-- Logo SVG -->
+            <svg class="logo-svg" viewBox="0 0 100 100">
+                <!-- Lingkaran luar yang akan dianimasikan -->
+                <circle class="logo-circle" cx="50" cy="50" r="45" stroke="#4f46e5" stroke-width="4" fill="none"/>
+                <!-- Teks logo yang telah diubah -->
+                <text class="logo-text" x="50" y="45" font-family="Inter, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="#c7d2fe">
+                    <tspan x="50">P I</tspan>
+                    <tspan x="50" dy="25">New</tspan>
+                </text>
+            </svg>
+
+            <!-- Teks "Academy Paong" -->
+            <h1 id="loading-main-text" class="main-text-container text-3xl md:text-4xl font-bold text-white tracking-wider">
+                <!-- Span akan diisi oleh JavaScript -->
+            </h1>
+            <!-- Teks "By Paong" -->
+            <p id="loading-by-paong-text" class="main-text-container text-xl md:text-2xl mt-2 text-white">
+                <!-- Span akan diisi oleh JavaScript -->
+            </p>
+        </div>
+    </div>
+
+    <!-- API Status Indicator -->
+    <div id="apiStatus" class="api-status pending">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>Menghubungkan ke Paong 2.0...</span>
+    </div>
+
+    <!-- Header -->
+    <header class="header-gradient text-white py-4 px-4 sm:px-8 shadow-xl">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                    <!-- Mobile Menu Button (Left) -->
+                    <button id="mobileMenuBtn" class="text-2xl md:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        <i class="fas fa-graduation-cap text-xl"></i>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-bold cursor-pointer" data-i18n="appTitle" id="headerAppTitle">Academy Paong</h1>
+                </div>
+                
+                <div class="hidden md:flex space-x-6 items-center rtl:space-x-reverse">
+                    <button id="homeBtn" class="font-medium hover:underline" data-i18n="navHome">Beranda</button>
+                    <button id="coursesBtn" class="font-medium hover:underline" data-i18n="navCourses">Kursus</button>
+                    <button id="contactBtn" class="font-medium hover:underline" data-i18n="navContact">Kontak</button>
+                    <!-- Discord Button for Desktop -->
+                    <a href="https://discord.gg/kWNfvXFN" target="_blank" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-full transition flex items-center space-x-2 rtl:space-x-reverse">
+                        <i class="fab fa-discord"></i>
+                        <span data-i18n="joinDiscord">Join Discord</span>
+                    </a>
+                    
+                    <!-- Language Selector -->
+                    <select id="languageSelector" class="language-selector">
+                        <option value="id" data-icon="🇮🇩">Indonesia</option>
+                        <option value="en" data-icon="🇬🇧">English</option>
+                        <option value="ar" data-icon="🇸🇦">العربية</option>
+                        <option value="zh" data-icon="🇨🇳">中文</option>
+                        <option value="th" data-icon="🇹🇭">ไทย</option>
+                        <option value="ms" data-icon="🇲🇾">Malaysia</option>
+                        <option value="ru" data-icon="🇷🇺">Русский</option>
+                        <option value="ja" data-icon="🇯🇵">日本語</option>
+                    </select>
+                    
+                    <button id="themeToggle" class="p-2 rounded-full bg-white/20 hover:bg-white/30">
+                        <i class="fas fa-moon" id="moonIcon"></i>
+                        <i class="fas fa-sun hidden" id="sunIcon"></i>
+                    </button>
+                </div>
+                
+                <!-- Mobile Language Selector & Theme Toggle (if needed, currently in mobile menu) -->
+                <div class="flex items-center space-x-4 rtl:space-x-reverse md:hidden">
+                    <!-- Already handled by mobile menu button -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="md:hidden fixed inset-0 bg-white dark:bg-slate-900 z-40 p-6 flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold" data-i18n="appTitle">Academy Paong</h2>
+            <button id="closeMobileMenuBtn" class="text-3xl">&times;</button>
+        </div>
+        <div class="flex flex-col space-y-4 flex-grow">
+            <button id="mobileHomeBtn" class="text-left py-3 font-medium text-lg hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg px-2" data-i18n="navHome">Beranda</button>
+            <button id="mobileCoursesBtn" class="text-left py-3 font-medium text-lg hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg px-2" data-i18n="navCourses">Kursus</button>
+            <button id="mobileContactBtn" class="text-left py-3 font-medium text-lg hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg px-2" data-i18n="navContact">Kontak</button>
+            <!-- Discord Button for Mobile -->
+            <a href="https://discord.gg/kWNfvXFN" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition flex items-center justify-center space-x-2 rtl:space-x-reverse mt-4">
+                <i class="fab fa-discord"></i>
+                <span data-i18n="joinDiscord">Join Discord</span>
+            </a>
+            
+            <div class="pt-8 border-t border-slate-200 dark:border-slate-700 mt-auto">
+                <label class="block text-sm font-medium mb-3" data-i18n="languageLabel">Bahasa:</label>
+                <select id="mobileLanguageSelector" class="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                    <option value="id" data-icon="🇮🇩">Indonesia</option>
+                    <option value="en" data-icon="🇬🇧">English</option>
+                    <option value="ar" data-icon="🇸🇦">العربية</option>
+                    <option value="zh" data-icon="🇨🇳">中文</option>
+                    <option value="th" data-icon="🇹🇭">ไทย</option>
+                    <option value="ms" data-icon="🇲🇾">Malaysia</option>
+                    <option value="ru" data-icon="🇷🇺">Русский</option>
+                    <option value="ja" data-icon="🇯🇵">日本語</option>
+                </select>
+            </div>
+            
+            <button id="mobileThemeToggle" class="flex items-center space-x-2 py-3 rtl:space-x-reverse text-left hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg px-2">
+                <i class="fas fa-moon" id="mobileMoonIcon"></i>
+                <i class="fas fa-sun hidden" id="mobileSunIcon"></i>
+                <span data-i18n="darkMode">Mode Gelap</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow py-8 px-4 sm:px-8">
+        <!-- Hero Section -->
+        <section id="homeSection" class="max-w-7xl mx-auto section-hidden">
+            <div class="grid grid-cols-1 gap-12 items-center">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                        <span data-i18n="heroTitle1">Pembelajaran</span> 
+                        <span class="gradient-text" data-i18n="heroTitle2">Revolusioner</span> 
+                        <span data-i18n="heroTitle3">dengan Kekuatan</span> 
+                        <span class="gradient-text" data-i18n="heroTitle4">Paong 2.0</span>
+                    </h2>
+                    <p class="text-lg md:text-xl text-slate-700 dark:text-slate-300 mb-8 max-w-2xl mx-auto" data-i18n="heroDescription">
+                        Academy Paong menghadirkan pengalaman belajar generasi baru yang didukung oleh teknologi kecerdasan buatan terdepan dari Paong 2.0.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button id="exploreCoursesBtn" class="bg-white text-blue-600 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-slate-100 transition" data-i18n="exploreButton">
+                            Jelajahi Kursus
+                        </button>
+                        <a href="https://discord.gg/kWNfvXFN" target="_blank" class="bg-slate-800 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-slate-900 transition flex items-center justify-center">
+                            <i class="fab fa-discord mr-2 rtl:mr-0 rtl:ml-2"></i> 
+                            <span data-i18n="communityButton">Komunitas Discord</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Discord Ad on Home Page -->
+            <div class="discord-ad mt-16 p-8 rounded-3xl flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
+                <div class="text-white text-center md:text-left">
+                    <h3 class="text-2xl md:text-3xl font-bold mb-2" data-i18n="discordAdTitle">Bergabunglah dengan Komunitas Kami!</h3>
+                    <p class="text-lg opacity-90" data-i18n="discordAdText">Dapatkan dukungan, diskusikan materi, dan terhubung dengan sesama pembelajar di Discord.</p>
+                </div>
+                <a href="https://discord.gg/kWNfvXFN" target="_blank" class="btn-discord">
+                    <i class="fab fa-discord text-xl"></i>
+                    <span data-i18n="joinDiscordNow">Gabung Sekarang</span>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Courses Section -->
+        <section id="coursesSection" class="max-w-7xl mx-auto section-hidden">
+            <div class="mb-8">
+                <button id="backToHomeBtn" class="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                    <i class="fas fa-arrow-left mr-2 rtl:mr-0 rtl:ml-2"></i> 
+                    <span data-i18n="backButton">Kembali ke Beranda</span>
+                </button>
+            </div>
+            
+            <h2 class="text-3xl md:text-4xl font-bold mb-2" data-i18n="coursesTitle">Kursus Unggulan</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-8" data-i18n="coursesSubtitle">Materi diisi oleh para Profesional untuk pembelajaran yang mudah dipahami dan mendalam.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Course Cards will be dynamically generated here by JavaScript -->
+            </div>
+
+            <!-- Discord Ad on Courses Page -->
+            <div class="discord-ad mt-16 p-8 rounded-3xl flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
+                <div class="text-white text-center md:text-left">
+                    <h3 class="text-2xl md:text-3xl font-bold mb-2" data-i18n="discordAdTitle">Siap Berdiskusi?</h3>
+                    <p class="text-lg opacity-90" data-i18n="discordAdText">Bergabunglah dengan komunitas Discord kami untuk tanya jawab dan diskusi mendalam.</p>
+                </div>
+                <a href="https://discord.gg/kWNfvXFN" target="_blank" class="btn-discord">
+                    <i class="fab fa-discord text-xl"></i>
+                    <span data-i18n="joinDiscordNow">Gabung Sekarang</span>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Course Detail Section -->
+        <section id="courseDetailSection" class="max-w-4xl mx-auto section-hidden">
+            <div class="mb-8">
+                <button id="backToCoursesBtn" class="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                    <i class="fas fa-arrow-left mr-2 rtl:mr-0 rtl:ml-2"></i> 
+                    <span data-i18n="backToCourses">Kembali ke Daftar Kursus</span>
+                </button>
+            </div>
+            
+            <div id="courseHeader" class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg mb-8">
+                <h2 class="text-3xl font-bold mb-4" id="courseTitle"></h2>
+                <p class="text-slate-600 dark:text-slate-400" id="courseDescription"></p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg">
+                <div class="flex items-center mb-6">
+                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-3 rtl:mr-0 rtl:ml-3">
+                        <i class="fas fa-robot text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <h3 class="font-bold" data-i18n="aiExplanation">Penjelasan oleh Paong 2.0</h3>
+                </div>
+                
+                <div id="aiResponse" class="ai-response-content space-y-4 prose dark:prose-invert max-w-none">
+                    <!-- Loading state or AI content will be here -->
+                    <div class="flex justify-center items-center h-64">
+                        <div class="text-center">
+                            <div class="loading-spinner mb-4 mx-auto"></div>
+                            <p class="text-slate-600 dark:text-slate-400" data-i18n="loadingText">Paong 2.0 sedang membuat konten pembelajaran...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Contact Section -->
+        <section id="contactSection" class="max-w-4xl mx-auto section-hidden">
+            <div class="mb-8">
+                <button id="backToHomeFromContactBtn" class="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                    <i class="fas fa-arrow-left mr-2 rtl:mr-0 rtl:ml-2"></i> 
+                    <span data-i18n="backButton">Kembali ke Beranda</span>
+                </button>
+            </div>
+            
+            <h2 class="text-3xl font-bold mb-2" data-i18n="contactTitle">Hubungi Kami</h2>
+            <p class="text-lg text-slate-600 dark:text-slate-400 mb-8" data-i18n="contactSubtitle">Punya pertanyaan? Tim Academy Paong siap membantu Anda</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg">
+                    <h3 class="font-bold text-xl mb-6" data-i18n="contactInfo">Informasi Kontak</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mr-4 rtl:mr-0 rtl:ml-4">
+                                <i class="fab fa-whatsapp text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-1" data-i18n="whatsapp">WhatsApp</h4>
+                                <p class="text-slate-600 dark:text-slate-400 mb-1">+62 882 2670 5434</p>
+                                <a href="https://wa.me/6288226705434" target="_blank" class="text-blue-600 dark:text-blue-400 font-medium" data-i18n="sendMessage">Kirim Pesan</a>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mr-4 rtl:mr-0 rtl:ml-4">
+                                <i class="fas fa-envelope text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-1" data-i18n="email">Email</h4>
+                                <p class="text-slate-600 dark:text-slate-400 mb-1">bypaongpinew@gmail.com</p>
+                                <a href="mailto:bypaongpinew@gmail.com" class="text-blue-600 dark:text-blue-400 font-medium" data-i18n="sendEmail">Kirim Email</a>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mr-4 rtl:mr-0 rtl:ml-4">
+                                <i class="fab fa-discord text-purple-600 dark:text-purple-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-1" data-i18n="discord">Discord</h4>
+                                <p class="text-slate-600 dark:text-slate-400 mb-1" data-i18n="community">Komunitas Pembelajaran</p>
+                                <a href="https://discord.gg/kWNfvXFN" target="_blank" class="text-blue-600 dark:text-blue-400 font-medium" data-i18n="joinCommunity">Bergabung</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg">
+                    <h3 class="font-bold text-xl mb-6" data-i18n="sendMessageTitle">Kirim Pesan</h3>
+                    
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 mb-2" for="name" data-i18n="fullName">Nama Lengkap</label>
+                            <input type="text" id="name" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 mb-2" for="email" data-i18n="email">Email</label>
+                            <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 mb-2" for="message" data-i18n="message">Pesan</label>
+                            <textarea id="message" rows="4" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg" data-i18n="sendButton">
+                            Kirim Pesan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-white py-8 px-4 sm:px-8 mt-12">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center space-x-3 rtl:space-x-reverse mb-4">
+                        <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold" data-i18n="appTitle">Academy Paong</h3>
+                    </div>
+                    <p class="text-slate-400 max-w-md" data-i18n="footerDescription">Platform pembelajaran gratis berbasis AI untuk semua kalangan</p>
+                </div>
+                
+                <div class="flex space-x-6 rtl:space-x-reverse">
+                    <a href="#" class="text-slate-400 hover:text-white text-2xl">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="text-slate-400 hover:text-white text-2xl">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-slate-400 hover:text-white text-2xl">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://discord.gg/kWNfvXFN" target="_blank" class="text-slate-400 hover:text-white text-2xl">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-700 mt-8 pt-6 text-center text-slate-400">
+                <p data-i18n="copyright">&copy; 2025 Academy Paong. Semua Hak Dilindungi Undang-Undang.</p>
+                <p class="mt-2" data-i18n="poweredBy">Didukung oleh Paong 2.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        // ====================================================================
+        // MULTI-LANGUAGE SUPPORT
+        // ====================================================================
+        const translations = {
+            id: {
+                appTitle: "Academy Paong",
+                navHome: "Beranda",
+                navCourses: "Kursus",
+                navContact: "Kontak", // Removed chatbot nav
+                loadingApp: "Memuat Academy Paong...",
+                heroTitle1: "Pembelajaran",
+                heroTitle2: "Revolusioner",
+                heroTitle3: "dengan Kekuatan",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "Academy Paong menghadirkan pengalaman belajar generasi baru yang didukung oleh teknologi kecerdasan buatan terdepan dari Paong 2.0.",
+                exploreButton: "Jelajahi Kursus",
+                communityButton: "Komunitas Discord",
+                aiAssistant: "Asisten Paong 2.0",
+                aiGreeting: "Halo! Saya Paong 2.0, asisten pembelajaran Anda. Saya siap membantu menjelaskan konsep ekonomi, keuangan, dan investasi dengan cara yang mudah dipahami.",
+                feature1Title: "Pembelajaran Adaptif",
+                feature1Desc: "Paong 2.0 menyesuaikan materi belajar dengan tingkat pemahaman dan gaya belajar Anda",
+                feature2Title: "Konten Terupdate",
+                feature2Desc: "Materi pembelajaran selalu diperbarui dengan informasi dan tren terbaru di dunia ekonomi",
+                feature3Title: "Interaktif",
+                feature3Desc: "Ajukan pertanyaan kapan saja dan dapatkan penjelasan mendalam dari Paong 2.0",
+                backButton: "Kembali ke Beranda",
+                coursesTitle: "Kursus Unggulan",
+                coursesSubtitle: "Materi diisi oleh para Profesional untuk pembelajaran yang mudah dipahami dan mendalam.",
+                startButton: "Mulai Belajar",
+                aiExplanation: "Penjelasan oleh Paong 2.0",
+                loadingText: "Paong 2.0 sedang membuat konten pembelajaran...",
+                contactTitle: "Hubungi Kami",
+                contactSubtitle: "Punya pertanyaan? Tim Academy Paong siap membantu Anda",
+                contactInfo: "Informasi Kontak",
+                whatsapp: "WhatsApp",
+                sendMessage: "Kirim Pesan",
+                email: "Email",
+                sendEmail: "Kirim Email",
+                discord: "Discord",
+                community: "Komunitas Pembelajaran",
+                joinCommunity: "Bergabung",
+                sendMessageTitle: "Kirim Pesan",
+                fullName: "Nama Lengkap",
+                message: "Pesan",
+                sendButton: "Kirim Pesan",
+                footerDescription: "Platform pembelajaran gratis berbasis AI untuk semua kalangan",
+                copyright: "&copy; 2025 Academy Paong. Semua Hak Dilindungi Undang-Undang.",
+                poweredBy: "Didukung oleh Paong 2.0",
+                darkMode: "Mode Gelap",
+                languageLabel: "Bahasa:",
+                backToCourses: "Kembali ke Daftar Kursus",
+                joinDiscord: "Join Discord",
+                discordAdTitle: "Bergabunglah dengan Komunitas Kami!",
+                discordAdText: "Dapatkan dukungan, diskusikan materi, dan terhubung dengan sesama pembelajar di Discord.",
+                joinDiscordNow: "Gabung Sekarang",
+                // Removed chatbot translation keys
+                // Course titles and descriptions (32 courses)
+                course1Title: "Dasar-dasar Keuangan Pribadi",
+                course1Desc: "Pelajari cara mengelola uang, menabung, dan berinvestasi untuk masa depan Anda.",
+                course2Title: "Investasi Saham untuk Pemula",
+                course2Desc: "Panduan lengkap untuk memulai investasi di pasar saham.",
+                course3Title: "Pengantar Cryptocurrency",
+                course3Desc: "Pahami dasar-dasar Bitcoin, Ethereum, dan aset digital lainnya.",
+                course4Title: "Ekonomi Mikro Lanjutan",
+                course4Desc: "Analisis mendalam tentang perilaku konsumen, produsen, dan struktur pasar.",
+                course5Title: "Ekonomi Makro Global",
+                course5Desc: "Memahami kebijakan moneter dan fiskal dalam konteks ekonomi dunia.",
+                course6Title: "Manajemen Portofolio",
+                course6Desc: "Strategi optimalisasi investasi dan pengelolaan risiko portofolio.",
+                course7Title: "Analisis Laporan Keuangan",
+                course7Desc: "Membaca dan menafsirkan laporan keuangan untuk keputusan investasi.",
+                course8Title: "Pasar Obligasi dan Derivatif",
+                course8Desc: "Studi tentang instrumen utang, opsi, dan kontrak berjangka.",
+                course9Title: "Keuangan Perusahaan",
+                course9Desc: "Keputusan pendanaan, investasi, dan dividen perusahaan.",
+                course10Title: "Ekonomi Pembangunan",
+                course10Desc: "Teori dan praktik pembangunan ekonomi di negara berkembang.",
+                course11Title: "Ekonometrika",
+                course11Desc: "Penggunaan metode statistik untuk menganalisis data ekonomi.",
+                course12Title: "Perilaku Keuangan",
+                course12Desc: "Pengaruh psikologi terhadap keputusan investasi dan pasar.",
+                course13Title: "Hukum Keuangan dan Regulasi",
+                course13Desc: "Kerangka hukum yang mengatur pasar dan institusi keuangan.",
+                course14Title: "Keuangan Internasional",
+                course14Desc: "Arus modal global, nilai tukar, dan pasar keuangan internasional.",
+                course15Title: "Manajemen Risiko Keuangan",
+                course15Desc: "Identifikasi, pengukuran, dan mitigasi risiko dalam keuangan.",
+                course16Title: "Investasi Alternatif",
+                course16Desc: "Memahami investasi di luar aset tradisional seperti real estat dan hedge fund.",
+                course17Title: "Blockchain dan Keuangan Terdesentralisasi (DeFi)",
+                course17Desc: "Aplikasi teknologi blockchain dalam ekosistem keuangan baru.",
+                course18Title: "Analisis Pasar Komoditas",
+                course18Desc: "Dinamika harga, penawaran, dan permintaan di pasar komoditas global.",
+                course19Title: "Perencanaan Pajak dan Strategi",
+                course19Desc: "Memahami implikasi pajak dan strategi untuk meminimalkan kewajiban.",
+                course20Title: "Etika dalam Keuangan",
+                course20Desc: "Prinsip-prinsip etika dan tanggung jawab sosial dalam industri keuangan.",
+                course21Title: "Valuasi Aset",
+                course21Desc: "Metode dan teknik untuk menentukan nilai wajar aset keuangan.",
+                course22Title: "Pasar Uang dan Perbankan",
+                course22Desc: "Studi tentang institusi keuangan, suku bunga, dan kebijakan moneter.",
+                course23Title: "Pengelolaan Kekayaan",
+                course23Desc: "Strategi perencanaan keuangan komprehensif untuk individu berpenghasilan tinggi.",
+                course24Title: "Analisis Kredit",
+                course24Desc: "Evaluasi kelayakan kredit perusahaan dan individu.",
+                course25Title: "Keuangan Publik",
+                course25Desc: "Peran pemerintah dalam ekonomi, pajak, dan pengeluaran publik.",
+                course26Title: "Ekonomi Lingkungan",
+                course26Desc: "Hubungan antara ekonomi dan lingkungan, serta kebijakan keberlanjutan.",
+                course27Title: "Ekonomi Kesehatan",
+                course27Desc: "Analisis ekonomi dalam sektor kesehatan dan kebijakan kesehatan.",
+                course28Title: "Ekonomi Tenaga Kerja",
+                course28Desc: "Dinamika pasar tenaga kerja, upah, dan pengangguran.",
+                course29Title: "Ekonomi Pertanian",
+                course29Desc: "Analisis ekonomi dalam sektor pertanian dan kebijakan pangan.",
+                course30Title: "Ekonomi Industri",
+                course30Desc: "Struktur pasar, perilaku perusahaan, dan regulasi industri.",
+                course31Title: "Teori Permainan dalam Ekonomi",
+                course31Desc: "Penggunaan teori permainan untuk menganalisis interaksi strategis.",
+                course32Title: "Inovasi Keuangan",
+                course32Desc: "Studi tentang produk, layanan, dan teknologi keuangan baru."
+            },
+            en: {
+                appTitle: "Academy Paong",
+                navHome: "Home",
+                navCourses: "Courses",
+                navContact: "Contact", // Removed chatbot nav
+                loadingApp: "Loading Academy Paong...",
+                heroTitle1: "Revolutionary",
+                heroTitle2: "Learning",
+                heroTitle3: "with the Power of",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "Academy Paong brings a new generation learning experience powered by Paong 2.0's cutting-edge artificial intelligence technology.",
+                exploreButton: "Explore Courses",
+                communityButton: "Discord Community",
+                aiAssistant: "Paong 2.0 Assistant",
+                aiGreeting: "Hello! I'm Paong 2.0, your learning assistant. I'm ready to help explain economic, financial, and investment concepts in an easy-to-understand way.",
+                feature1Title: "Adaptive Learning",
+                feature1Desc: "Paong 2.0 adapts learning materials to your comprehension level and learning style",
+                feature2Title: "Updated Content",
+                feature2Desc: "Learning materials are always updated with the latest information and trends in economics",
+                feature3Title: "Interactive",
+                feature3Desc: "Ask questions anytime and get in-depth explanations from Paong 2.0",
+                backButton: "Back to Home",
+                coursesTitle: "Featured Courses",
+                coursesSubtitle: "Materials provided by Professionals for easy-to-understand and in-depth learning.",
+                startButton: "Start Learning",
+                aiExplanation: "Explanation by Paong 2.0",
+                loadingText: "Paong 2.0 is creating learning content...",
+                contactTitle: "Contact Us",
+                contactSubtitle: "Have questions? The Academy Paong team is ready to help you",
+                contactInfo: "Contact Information",
+                whatsapp: "WhatsApp",
+                sendMessage: "Send Message",
+                email: "Email",
+                sendEmail: "Send Email",
+                discord: "Discord",
+                community: "Learning Community",
+                joinCommunity: "Join Community",
+                sendMessageTitle: "Send Message",
+                fullName: "Full Name",
+                message: "Message",
+                sendButton: "Send Message",
+                footerDescription: "Free AI-powered learning platform for everyone",
+                copyright: "&copy; 2025 Academy Paong. All Rights Reserved.",
+                poweredBy: "Powered by Paong 2.0",
+                darkMode: "Dark Mode",
+                languageLabel: "Language:",
+                backToCourses: "Back to Courses",
+                joinDiscord: "Join Discord",
+                discordAdTitle: "Join Our Community!",
+                discordAdText: "Get support, discuss materials, and connect with fellow learners on Discord.",
+                joinDiscordNow: "Join Now",
+                // Removed chatbot translation keys
+                // Course titles and descriptions (32 courses)
+                course1Title: "Personal Finance Basics",
+                course1Desc: "Learn how to manage money, save, and invest for your future.",
+                course2Title: "Stock Investing for Beginners",
+                course2Desc: "Complete guide to start investing in the stock market.",
+                course3Title: "Introduction to Cryptocurrency",
+                course3Desc: "Understand the basics of Bitcoin, Ethereum, and other digital assets.",
+                course4Title: "Advanced Microeconomics",
+                course4Desc: "In-depth analysis of consumer and producer behavior, and market structures.",
+                course5Title: "Global Macroeconomics",
+                course5Desc: "Understanding monetary and fiscal policies in a global economic context.",
+                course6Title: "Portfolio Management",
+                course6Desc: "Strategies for investment optimization and portfolio risk management.",
+                course7Title: "Financial Statement Analysis",
+                course7Desc: "Reading and interpreting financial statements for investment decisions.",
+                course8Title: "Bond and Derivatives Markets",
+                course8Desc: "Study of debt instruments, options, and futures contracts.",
+                course9Title: "Corporate Finance",
+                course9Desc: "Corporate financing, investment, and dividend decisions.",
+                course10Title: "Development Economics",
+                course10Desc: "Theories and practices of economic development in developing countries.",
+                course11Title: "Econometrics",
+                course11Desc: "The use of statistical methods to analyze economic data.",
+                course12Title: "Behavioral Finance",
+                course12Desc: "The influence of psychology on investment decisions and markets.",
+                course13Title: "Financial Law and Regulation",
+                course13Desc: "The legal framework governing financial markets and institutions.",
+                course14Title: "International Finance",
+                course14Desc: "Global capital flows, exchange rates, and international financial markets.",
+                course15Title: "Financial Risk Management",
+                course15Desc: "Identification, measurement, and mitigation of risks in finance.",
+                course16Title: "Alternative Investments",
+                course16Desc: "Understanding investments beyond traditional assets like real estate and hedge funds.",
+                course17Title: "Blockchain and Decentralized Finance (DeFi)",
+                course17Desc: "Applications of blockchain technology in new financial ecosystems.",
+                course18Title: "Commodity Market Analysis",
+                course18Desc: "Price dynamics, supply, and demand in global commodity markets.",
+                course19Title: "Tax Planning and Strategies",
+                course19Desc: "Understanding tax implications and strategies to minimize liabilities.",
+                course20Title: "Ethics in Finance",
+                course20Desc: "Ethical principles and social responsibility in the financial industry.",
+                course21Title: "Asset Valuation",
+                course21Desc: "Methods and techniques for determining the fair value of financial assets.",
+                course22Title: "Money Markets and Banking",
+                course22Desc: "Study of financial institutions, interest rates, and monetary policy.",
+                course23Title: "Wealth Management",
+                course23Desc: "Comprehensive financial planning strategies for high-net-worth individuals.",
+                course24Title: "Credit Analysis",
+                course24Desc: "Evaluating the creditworthiness of companies and individuals.",
+                course25Title: "Public Finance",
+                course25Desc: "The role of government in the economy, taxation, and public spending.",
+                course26Title: "Environmental Economics",
+                course26Desc: "The relationship between economy and environment, and sustainability policies.",
+                course27Title: "Health Economics",
+                course27Desc: "Economic analysis in the healthcare sector and health policies.",
+                course28Title: "Labor Economics",
+                course28Desc: "Dynamics of labor markets, wages, and unemployment.",
+                course29Title: "Agricultural Economics",
+                course29Desc: "Economic analysis in the agricultural sector and food policies.",
+                course30Title: "Industrial Economics",
+                course30Desc: "Market structures, firm behavior, and industry regulation.",
+                course31Title: "Game Theory in Economics",
+                course31Desc: "Using game theory to analyze strategic interactions.",
+                course32Title: "Financial Innovation",
+                course32Desc: "Study of new financial products, services, and technologies."
+            },
+            ar: {
+                appTitle: "أكاديمية باونج",
+                navHome: "الصفحة الرئيسية",
+                navCourses: "الدورات",
+                navContact: "اتصل بنا", // Removed chatbot nav
+                loadingApp: "جاري تحميل أكاديمية باونج...",
+                heroTitle1: "التعلم",
+                heroTitle2: "الثوري",
+                heroTitle3: "بقوة",
+                heroTitle4: "باونج 2.0",
+                heroDescription: "تقدم أكاديمية باونج تجربة تعليمية من الجيل الجديد مدعومة بتقنية الذكاء الاصطناعي المتطورة من باونج 2.0.",
+                exploreButton: "استكشاف الدورات",
+                communityButton: "مجتمع ديسكورد",
+                aiAssistant: "مساعد باونج 2.0",
+                aiGreeting: "مرحبًا! أنا باونج 2.0، مساعدك التعليمي. أنا جاهز لمساعدتك في شرح مفاهيم الاقتصاد والتمويل والاستثمار بطريقة سهلة الفهم.",
+                feature1Title: "التعلم التكيفي",
+                feature1Desc: "يقوم باونج 2.0 بتكييف المواد التعليمية مع مستوى فهمك وأسلوب تعلمك",
+                feature2Title: "محتوى محدث",
+                feature2Desc: "يتم تحديث المواد التعليمية دائمًا بأحدث المعلومات والاتجاهات في الاقتصاد",
+                feature3Title: "تفاعلي",
+                feature3Desc: "اطرح الأسئلة في أي وقت واحصل على تفسيرات متعمقة من باونج 2.0",
+                backButton: "العودة إلى الصفحة الرئيسية",
+                coursesTitle: "الدورات المميزة",
+                coursesSubtitle: "المواد مقدمة من قبل محترفين لتعلم سهل الفهم ومتعمق.",
+                startButton: "ابدأ التعلم",
+                aiExplanation: "شرح بواسطة باونج 2.0",
+                loadingText: "باونج 2.0 يقوم بإنشاء محتوى تعليمي...",
+                contactTitle: "اتصل بنا",
+                contactSubtitle: "هل لديك أسئلة؟ فريق أكاديمية باونج مستعد لمساعدتك",
+                contactInfo: "معلومات الاتصال",
+                whatsapp: "واتساب",
+                sendMessage: "إرسال رسالة",
+                email: "البريد الإلكتروني",
+                sendEmail: "إرسال بريد إلكتروني",
+                discord: "ديسكورد",
+                community: "مجتمع التعلم",
+                joinCommunity: "انضم للمجتمع",
+                sendMessageTitle: "إرسال رسالة",
+                fullName: "الاسم الكامل",
+                message: "الرسالة",
+                sendButton: "إرسال الرسالة",
+                footerDescription: "منصة تعليمية مجانية مدعومة بالذكاء الاصطناعي للجميع",
+                copyright: "&copy; 2025 أكاديمية باونج. جميع الحقوق محفوظة.",
+                poweredBy: "مدعوم بواسطة باونج 2.0",
+                darkMode: "الوضع المظلم",
+                languageLabel: "اللغة:",
+                backToCourses: "العودة إلى الدورات",
+                joinDiscord: "انضم إلى ديسكورد",
+                discordAdTitle: "انضم إلى مجتمعنا!",
+                discordAdText: "احصل على الدعم، ناقش المواد، وتواصل مع زملائك المتعلمين على ديسكورد.",
+                joinDiscordNow: "انضم الآن",
+                // Removed chatbot translation keys
+                // Course titles and descriptions (32 courses)
+                course1Title: "أساسيات التمويل الشخصي",
+                course1Desc: "تعلم كيفية إدارة الأموال والادخار والاستثمار لمستقبلك.",
+                course2Title: "استثمار الأسهم للمبتدئين",
+                course2Desc: "دليل شامل للبدء في الاستثمار في سوق الأسهم.",
+                course3Title: "مقدمة في العملات المشفرة",
+                course3Desc: "افهم أساسيات البيتكوين والإيثيريوم والأصول الرقمية الأخرى.",
+                course4Title: "الاقتصاد الجزئي المتقدم",
+                course4Desc: "تحليل متعمق لسلوك المستهلك والمنتج وهياكل السوق.",
+                course5Title: "الاقتصاد الكلي العالمي",
+                course5Desc: "فهم السياسات النقدية والمالية في سياق الاقتصاد العالمي.",
+                course6Title: "إدارة المحافظ",
+                course6Desc: "استراتيجيات تحسين الاستثمار وإدارة مخاطر المحافظ.",
+                course7Title: "تحليل البيانات المالية",
+                course7Desc: "قراءة وتفسير البيانات المالية لاتخاذ قرارات الاستثمار.",
+                course8Title: "أسواق السندات والمشتقات",
+                course8Desc: "دراسة أدوات الدين والخيارات وعقود العقود الآجلة.",
+                course9Title: "تمويل الشركات",
+                course9Desc: "قرارات تمويل الشركات والاستثمار وتوزيع الأرباح.",
+                course10Title: "اقتصاد التنمية",
+                course10Desc: "نظريات وممارسات التنمية الاقتصادية في البلدان النامية.",
+                course11Title: "الاقتصاد القياسي",
+                course11Desc: "استخدام الأساليب الإحصائية لتحليل البيانات الاقتصادية.",
+                course12Title: "السلوك المالي",
+                course12Desc: "تأثير علم النفس على قرارات الاستثمار والأسواق.",
+                course13Title: "القانون المالي والتنظيم",
+                course13Desc: "الإطار القانوني الذي يحكم الأسواق والمؤسسات المالية.",
+                course14Title: "التمويل الدولي",
+                course14Desc: "تدفقات رأس المال العالمية وأسعار الصرف والأسواق المالية الدولية.",
+                course15Title: "إدارة المخاطر المالية",
+                course15Desc: "تحديد وقياس وتخفيف المخاطر في التمويل.",
+                course16Title: "الاستثمارات البديلة",
+                course16Desc: "فهم الاستثمارات بخلاف الأصول التقليدية مثل العقارات وصناديق التحوط.",
+                course17Title: "البلوك تشين والتمويل اللامركزي (DeFi)",
+                course17Desc: "تطبيقات تقنية البلوك تشين في النظم البيئية المالية الجديدة.",
+                course18Title: "تحليل سوق السلع",
+                course18Desc: "ديناميكيات الأسعار والعرض والطلب في أسواق السلع العالمية.",
+                course19Title: "التخطيط الضريبي والاستراتيجيات",
+                course19Desc: "فهم الآثار الضريبية والاستراتيجيات لتقليل الالتزامات.",
+                course20Title: "الأخلاقيات في التمويل",
+                course20Desc: "المبادئ الأخلاقية والمسؤولية الاجتماعية في الصناعة المالية.",
+                course21Title: "تقييم الأصول",
+                course21Desc: "الأساليب والتقنيات لتحديد القيمة العادلة للأصول المالية.",
+                course22Title: "أسواق المال والبنوك",
+                course22Desc: "دراسة المؤسسات المالية وأسعار الفائدة والسياسة النقدية.",
+                course23Title: "إدارة الثروات",
+                course23Desc: "استراتيجيات التخطيط المالي الشاملة للأفراد ذوي الدخل المرتفع.",
+                course24Title: "تحليل الائتمان",
+                course24Desc: "تقييم الجدارة الائتمانية للشركات والأفراد.",
+                course25Title: "التمويل العام",
+                course25Desc: "دور الحكومة في الاقتصاد والضرائب والإنفاق العام.",
+                course26Title: "الاقتصاد البيئي",
+                course26Desc: "العلاقة بين الاقتصاد والبيئة، وسياسات الاستدامة.",
+                course27Title: "اقتصاديات الصحة",
+                course27Desc: "التحليل الاقتصادي في قطاع الرعاية الصحية وسياسات الصحة.",
+                course28Title: "اقتصاديات العمل",
+                course28Desc: "ديناميكيات أسواق العمل والأجور والبطالة.",
+                course29Title: "الاقتصاد الزراعي",
+                course29Desc: "التحليل الاقتصادي في القطاع الزراعي وسياسات الغذاء.",
+                course30Title: "الاقتصاد الصناعي",
+                course30Desc: "هياكل السوق وسلوك الشركات وتنظيم الصناعة.",
+                course31Title: "نظرية الألعاب في الاقتصاد",
+                course31Desc: "استخدام نظرية الألعاب لتحليل التفاعلات الاستراتيجية.",
+                course32Title: "الابتكار المالي",
+                course32Desc: "دراسة المنتجات والخدمات والتقنيات المالية الجديدة."
+            },
+            zh: {
+                appTitle: "Paong学院",
+                navHome: "首页",
+                navCourses: "课程",
+                navContact: "联系我们", // Removed chatbot nav
+                loadingApp: "正在加载Paong学院...",
+                heroTitle1: "革命性",
+                heroTitle2: "学习体验",
+                heroTitle3: "由",
+                heroTitle4: "Paong 2.0驱动",
+                heroDescription: "Paong学院带来新一代学习体验，由Paong 2.0领先的人工智能技术支持。",
+                exploreButton: "探索课程",
+                communityButton: "Discord社区",
+                aiAssistant: "Paong 2.0助手",
+                aiGreeting: "你好！我是Paong 2.0，您的学习助手。我随时准备以易于理解的方式解释经济、金融和投资概念。",
+                feature1Title: "自适应学习",
+                feature1Desc: "Paong 2.0根据您的理解水平和学习风格调整学习材料",
+                feature2Title: "最新内容",
+                feature2Desc: "学习材料始终更新经济学领域的最新信息和趋势",
+                feature3Title: "互动式学习",
+                feature3Desc: "随时提问，获得Paong 2.0的深入解释",
+                backButton: "返回首页",
+                coursesTitle: "精选课程",
+                coursesSubtitle: "由专业人士提供材料，学习内容易于理解且深入。",
+                startButton: "开始学习",
+                aiExplanation: "Paong 2.0解释",
+                loadingText: "Paong 2.0正在创建学习内容...",
+                contactTitle: "联系我们",
+                contactSubtitle: "有问题吗？Paong学院团队随时为您服务",
+                contactInfo: "联系信息",
+                whatsapp: "WhatsApp",
+                sendMessage: "发送消息",
+                email: "电子邮件",
+                sendEmail: "发送邮件",
+                discord: "Discord",
+                community: "学习社区",
+                joinCommunity: "加入社区",
+                sendMessageTitle: "发送消息",
+                fullName: "全名",
+                message: "消息",
+                sendButton: "发送消息",
+                footerDescription: "面向所有人的免费AI驱动学习平台",
+                copyright: "&copy; 2025 Paong学院。保留所有权利。",
+                poweredBy: "由Paong 2.0提供支持",
+                darkMode: "暗黑模式",
+                languageLabel: "语言:",
+                backToCourses: "返回课程",
+                joinDiscord: "加入Discord",
+                discordAdTitle: "加入我们的社区！",
+                discordAdText: "获取支持，讨论材料，并在Discord上与其他学习者联系。",
+                joinDiscordNow: "立即加入",
+                // Removed chatbot translation keys
+                // Course titles and descriptions (32 courses)
+                course1Title: "个人理财基础",
+                course1Desc: "学习如何管理资金、储蓄和为未来投资。",
+                course2Title: "股票投资入门",
+                course2Desc: "开始在股票市场投资的完整指南。",
+                course3Title: "加密货币入门",
+                course3Desc: "了解比特币、以太坊和其他数字资产的基础知识。",
+                course4Title: "高级微观经济学",
+                course4Desc: "消费者和生产者行为以及市场结构的深入分析。",
+                course5Title: "全球宏观经济学",
+                course5Desc: "在全球经济背景下理解货币和财政政策。",
+                course6Title: "投资组合管理",
+                course6Desc: "投资优化和投资组合风险管理的策略。",
+                course7Title: "财务报表分析",
+                course7Desc: "阅读和解释财务报表以做出投资决策。",
+                course8Title: "债券和衍生品市场",
+                course8Desc: "债务工具、期权和期货合约的研究。",
+                course9Title: "公司金融",
+                course9Desc: "公司融资、投资和股息决策。",
+                course10Title: "发展经济学",
+                course10Desc: "发展中国家经济发展的理论和实践。",
+                course11Title: "计量经济学",
+                course11Desc: "使用统计方法分析经济数据。",
+                course12Title: "行为金融学",
+                course12Desc: "心理学对投资决策和市场的影响。",
+                course13Title: "金融法律与法规",
+                course13Desc: "管理金融市场和机构的法律框架。",
+                course14Title: "国际金融",
+                course14Desc: "全球资本流动、汇率和国际金融市场。",
+                course15Title: "金融风险管理",
+                course15Desc: "金融风险的识别、衡量和缓解。",
+                course16Title: "另类投资",
+                course16Desc: "了解房地产和对冲基金等传统资产之外的投资。",
+                course17Title: "区块链和去中心化金融 (DeFi)",
+                course17Desc: "区块链技术在新金融生态系统中的应用。",
+                course18Title: "商品市场分析",
+                course18Desc: "全球商品市场的价格动态、供给和需求。",
+                course19Title: "税务规划与策略",
+                course19Desc: "了解税务影响和最小化负债的策略。",
+                course20Title: "金融伦理",
+                course20Desc: "金融行业的道德原则和社会责任。",
+                course21Title: "资产估值",
+                course21Desc: "确定金融资产公允价值的方法和技术。",
+                course22Title: "货币市场与银行",
+                course22Desc: "金融机构、利率和货币政策的研究。",
+                course23Title: "财富管理",
+                course23Desc: "高净值人士的综合财务规划策略。",
+                course24Title: "信用分析",
+                course24Desc: "评估公司和个人的信用度。",
+                course25Title: "公共财政",
+                course25Desc: "政府在经济中的作用、税收和公共支出。",
+                course26Title: "环境经济学",
+                course26Desc: "经济与环境之间的关系以及可持续发展政策。",
+                course27Title: "健康经济学",
+                course27Desc: "医疗保健领域的经济分析和健康政策。",
+                course28Title: "劳动经济学",
+                course28Desc: "劳动力市场、工资和失业的动态。",
+                course29Title: "农业经济学",
+                course29Desc: "农业部门的经济分析和粮食政策。",
+                course30Title: "产业经济学",
+                course30Desc: "市场结构、企业行为和产业监管。",
+                course31Title: "经济学中的博弈论",
+                course31Desc: "使用博弈论分析战略互动。",
+                course32Title: "金融创新",
+                course32Desc: "新金融产品、服务和技术的研究。"
+            },
+            th: {
+                appTitle: "สถาบัน Paong",
+                navHome: "หน้าหลัก",
+                navCourses: "คอร์สเรียน",
+                navContact: "ติดต่อเรา", // Removed chatbot nav
+                loadingApp: "กำลังโหลดสถาบัน Paong...",
+                heroTitle1: "การเรียนรู้",
+                heroTitle2: "แบบปฏิวัติ",
+                heroTitle3: "ด้วยพลังของ",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "สถาบัน Paong นำเสนอประสบการณ์การเรียนรู้รุ่นใหม่ที่ขับเคลื่อนด้วยเทคโนโลยีปัญญาประดิษฐ์ล้ำสมัยจาก Paong 2.0",
+                exploreButton: "สำรวจคอร์สเรียน",
+                communityButton: "ชุมชน Discord",
+                aiAssistant: "ผู้ช่วย Paong 2.0",
+                aiGreeting: "สวัสดี! ผมคือ Paong 2.0 ผู้ช่วยการเรียนรู้ของคุณ ผมพร้อมที่จะช่วยอธิบายแนวคิดทางเศรษฐกิจ การเงิน และการลงทุนในวิธีที่เข้าใจง่าย",
+                feature1Title: "การเรียนรู้แบบปรับตัว",
+                feature1Desc: "Paong 2.0 ปรับเนื้อหาการเรียนรู้ให้เหมาะกับระดับความเข้าใจและสไตล์การเรียนรู้ของคุณ",
+                feature2Title: "เนื้อหาอัพเดท",
+                feature2Desc: "เนื้อหาการเรียนรู้ได้รับการอัพเดทอยู่เสมอด้วยข้อมูลและแนวโน้มล่าสุดในโลกเศรษฐกิจ",
+                feature3Title: "โต้ตอบได้",
+                feature3Desc: "ถามคำถามได้ทุกเมื่อและรับคำอธิบายเชิงลึกจาก Paong 2.0",
+                backButton: "กลับสู่หน้าหลัก",
+                coursesTitle: "คอร์สเรียนแนะนำ",
+                coursesSubtitle: "เนื้อหาจัดทำโดยผู้เชี่ยวชาญเพื่อการเรียนรู้ที่เข้าใจง่ายและลึกซึ้ง",
+                startButton: "เริ่มเรียน",
+                aiExplanation: "คำอธิบายโดย Paong 2.0",
+                loadingText: "Paong 2.0 กำลังสร้างเนื้อหาการเรียนรู้...",
+                contactTitle: "ติดต่อเรา",
+                contactSubtitle: "มีคำถาม? ทีมงานสถาบัน Paong พร้อมช่วยเหลือคุณ",
+                contactInfo: "ข้อมูลติดต่อ",
+                whatsapp: "WhatsApp",
+                sendMessage: "ส่งข้อความ",
+                email: "อีเมล",
+                sendEmail: "ส่งอีเมล",
+                discord: "Discord",
+                community: "ชุมชนการเรียนรู้",
+                joinCommunity: "เข้าร่วมชุมชน",
+                sendMessageTitle: "ส่งข้อความ",
+                fullName: "ชื่อ-นามสกุล",
+                message: "ข้อความ",
+                sendButton: "ส่งข้อความ",
+                footerDescription: "แพลตฟอร์มการเรียนรู้ฟรีที่ขับเคลื่อนด้วย AI สำหรับทุกคน",
+                copyright: "&copy; 2025 สถาบัน Paong. สงวนลิขสิทธิ์ทุกประการ.",
+                poweredBy: "ขับเคลื่อนโดย Paong 2.0",
+                darkMode: "โหมดมืด",
+                languageLabel: "ภาษา:",
+                backToCourses: "กลับสู่รายการคอร์ส",
+                joinDiscord: "เข้าร่วม Discord",
+                discordAdTitle: "พร้อมพูดคุยไหม?",
+                discordAdText: "เข้าร่วมชุมชน Discord ของเราเพื่อถามตอบและสนทนาเชิงลึก",
+                joinDiscordNow: "เข้าร่วมเดี๋ยวนี้",
+                // Removed chatbot translation keys
+                // Course titles and descriptions (32 courses)
+                course1Title: "พื้นฐานการเงินส่วนบุคคล",
+                course1Desc: "เรียนรู้วิธีจัดการเงิน ออม และลงทุนเพื่ออนาคตของคุณ",
+                course2Title: "การลงทุนหุ้นสำหรับมือใหม่",
+                course2Desc: "คู่มือฉบับสมบูรณ์สำหรับการเริ่มลงทุนในตลาดหุ้น",
+                course3Title: "ความรู้เบื้องต้นเกี่ยวกับคริปโตเคอร์เรนซี",
+                course3Desc: "เข้าใจพื้นฐานของ Bitcoin, Ethereum และสินทรัพย์ดิจิทัลอื่นๆ",
+                course4Title: "เศรษฐศาสตร์จุลภาคขั้นสูง",
+                course4Desc: "การวิเคราะห์เชิงลึกเกี่ยวกับพฤติกรรมผู้บริโภค ผู้ผลิต และโครงสร้างตลาด",
+                course5Title: "เศรษฐศาสตร์มหภาคโลก",
+                course5Desc: "ทำความเข้าใจนโยบายการเงินและการคลังในบริบทเศรษฐกิจโลก",
+                course6Title: "การจัดการพอร์ตการลงทุน",
+                course6Desc: "กลยุทธ์สำหรับการเพิ่มประสิทธิภาพการลงทุนและการจัดการความเสี่ยงพอร์ตการลงทุน",
+                course7Title: "การวิเคราะห์งบการเงิน",
+                course7Desc: "การอ่านและตีความงบการเงินเพื่อการตัดสินใจลงทุน",
+                course8Title: "ตลาดตราสารหนี้และอนุพันธ์",
+                course8Desc: "การศึกษาตราสารหนี้ ออปชั่น และสัญญาซื้อขายล่วงหน้า",
+                course9Title: "การเงินองค์กร",
+                course9Desc: "การตัดสินใจด้านการเงิน การลงทุน และเงินปันผลขององค์กร",
+                course10Title: "เศรษฐศาสตร์การพัฒนา",
+                course10Desc: "ทฤษฎีและการปฏิบัติของการพัฒนาเศรษฐกิจในประเทศกำลังพัฒนา",
+                course11Title: "เศรษฐมิติ",
+                course11Desc: "การใช้ระเบียบวิธีทางสถิติเพื่อวิเคราะห์ข้อมูลทางเศรษฐกิจ",
+                course12Title: "การเงินเชิงพฤติกรรม",
+                course12Desc: "อิทธิพลของจิตวิทยาที่มีต่อการตัดสินใจลงทุนและตลาด",
+                course13Title: "กฎหมายและการกำกับดูแลทางการเงิน",
+                course13Desc: "กรอบกฎหมายที่ควบคุมตลาดและสถาบันการเงิน",
+                course14Title: "การเงินระหว่างประเทศ",
+                course14Desc: "การไหลของเงินทุนทั่วโลก อัตราแลกเปลี่ยน และตลาดการเงินระหว่างประเทศ",
+                course15Title: "การบริหารความเสี่ยงทางการเงิน",
+                course15Desc: "การระบุ การวัด และการลดความเสี่ยงทางการเงิน",
+                course16Title: "การลงทุนทางเลือก",
+                course16Desc: "ทำความเข้าใจการลงทุนนอกเหนือจากสินทรัพย์ดั้งเดิม เช่น อสังหาริมทรัพย์และเฮดจ์ฟันด์",
+                course17Title: "บล็อกเชนและการเงินแบบกระจายศูนย์ (DeFi)",
+                course17Desc: "การประยุกต์ใช้เทคโนโลยีบล็อกเชนในระบบนิเวศทางการเงินใหม่",
+                course18Title: "การวิเคราะห์ตลาดสินค้าโภคภัณฑ์",
+                course18Desc: "พลวัตของราคา อุปทาน และอุปสงค์ในตลาดสินค้าโภคภัณฑ์ทั่วโลก",
+                course19Title: "การวางแผนภาษีและกลยุทธ์",
+                course19Desc: "ทำความเข้าใจผลกระทบทางภาษีและกลยุทธ์เพื่อลดภาระภาษี",
+                course20Title: "จริยธรรมทางการเงิน",
+                course20Desc: "หลักจริยธรรมและความรับผิดชอบต่อสังคมในอุตสาหกรรมการเงิน",
+                course21Title: "การประเมินมูลค่าสินทรัพย์",
+                course21Desc: "วิธีการและเทคนิคในการกำหนดมูลค่าที่แท้จริงของสินทรัพย์ทางการเงิน",
+                course22Title: "ตลาดเงินและการธนาคาร",
+                course22Desc: "การศึกษาเกี่ยวกับสถาบันการเงิน อัตราดอกเบี้ย และนโยบายการเงิน",
+                course23Title: "การบริหารความมั่งคั่ง",
+                course23Desc: "กลยุทธ์การวางแผนทางการเงินที่ครอบคลุมสำหรับบุคคลที่มีรายได้สูง",
+                course24Title: "การวิเคราะห์สินเชื่อ",
+                course24Desc: "การประเมินความน่าเชื่อถือของบริษัทและบุคคล",
+                course25Title: "การเงินสาธารณะ",
+                course25Desc: "บทบาทของรัฐบาลในเศรษฐกิจ ภาษี และการใช้จ่ายสาธารณะ",
+                course26Title: "เศรษฐศาสตร์สิ่งแวดล้อม",
+                course26Desc: "ความสัมพันธ์ระหว่างเศรษฐกิจและสิ่งแวดล้อม และนโยบายความยั่งยืน",
+                course27Title: "เศรษฐศาสตร์สุขภาพ",
+                course27Desc: "การวิเคราะห์ทางเศรษฐกิจในภาคส่วนการดูแลสุขภาพและนโยบายสุขภาพ",
+                course28Title: "เศรษฐศาสตร์แรงงาน",
+                course28Desc: "พลวัตของตลาดแรงงาน ค่าจ้าง และการว่างงาน",
+                course29Title: "เศรษฐศาสตร์เกษตร",
+                course29Desc: "การวิเคราะห์ทางเศรษฐกิจในภาคเกษตรและนโยบายอาหาร",
+                course30Title: "เศรษฐศาสตร์อุตสาหกรรม",
+                course30Desc: "โครงสร้างตลาด พฤติกรรมบริษัท และการกำกับดูแลอุตสาหกรรม",
+                course31Title: "ทฤษฎีเกมในเศรษฐศาสตร์",
+                course31Desc: "การใช้ทฤษฎีเกมเพื่อวิเคราะห์ปฏิสัมพันธ์เชิงกลยุทธ์",
+                course32Title: "นวัตกรรมทางการเงิน",
+                course32Desc: "การศึกษาผลิตภัณฑ์ บริการ และเทคโนโลยีทางการเงินใหม่"
+            },
+            ms: {
+                appTitle: "Akademi Paong",
+                navHome: "Laman Utama",
+                navCourses: "Kursus",
+                navContact: "Hubungi", // Removed chatbot nav
+                loadingApp: "Memuatkan Akademi Paong...",
+                heroTitle1: "Pembelajaran",
+                heroTitle2: "Revolusioner",
+                heroTitle3: "dengan Kuasa",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "Akademi Paong membawa pengalaman pembelajaran generasi baru yang dikuasakan oleh teknologi kecerdasan buatan terkini dari Paong 2.0.",
+                exploreButton: "Terokai Kursus",
+                communityButton: "Komuniti Discord",
+                aiAssistant: "Pembantu Paong 2.0",
+                aiGreeting: "Helo! Saya Paong 2.0, pembantu pembelajaran anda. Saya bersedia membantu menerangkan konsep ekonomi, kewangan dan pelaburan dengan cara yang mudah difahami.",
+                feature1Title: "Pembelajaran Adaptif",
+                feature1Desc: "Paong 2.0 menyesuaikan bahan pembelajaran dengan tahap kefahaman dan gaya pembelajaran anda",
+                feature2Title: "Kandungan Terkini",
+                feature2Desc: "Bahan pembelajaran sentiasa dikemas kini dengan maklumat dan trend terkini dalam ekonomi",
+                feature3Title: "Interaktif",
+                feature3Desc: "Ajukan soalan bila-bila masa dan dapatkan penjelasan mendalam daripada Paong 2.0",
+                backButton: "Kembali ke Laman Utama",
+                coursesTitle: "Kursus Pilihan",
+                coursesSubtitle: "Bahan disediakan oleh Profesional untuk pembelajaran yang mudah difahami dan mendalam.",
+                startButton: "Mula Belajar",
+                aiExplanation: "Penjelasan oleh Paong 2.0",
+                loadingText: "Paong 2.0 sedang mencipta kandungan pembelajaran...",
+                contactTitle: "Hubungi Kami",
+                contactSubtitle: "Ada soalan? Pasukan Akademi Paong sedia membantu anda",
+                contactInfo: "Maklumat Hubungan",
+                whatsapp: "WhatsApp",
+                sendMessage: "Hantar Mesej",
+                email: "Emel",
+                sendEmail: "Hantar Emel",
+                discord: "Discord",
+                community: "Komuniti Pembelajaran",
+                joinCommunity: "Sertai Komuniti",
+                sendMessageTitle: "Hantar Mesej",
+                fullName: "Nama Penuh",
+                message: "Mesej",
+                sendButton: "Hantar Mesej",
+                footerDescription: "Platform pembelajaran percuma berasaskan AI untuk semua",
+                copyright: "&copy; 2025 Akademi Paong. Hak Cipta Terpelihara.",
+                poweredBy: "Dikuasakan oleh Paong 2.0",
+                darkMode: "Mod Gelap",
+                languageLabel: "Bahasa:",
+                backToCourses: "Kembali ke Senarai Kursus",
+                joinDiscord: "Sertai Discord",
+                discordAdTitle: "Sertai Komuniti Kami!",
+                discordAdText: "Dapatkan sokongan, bincangkan bahan, dan berhubung dengan rakan pelajar di Discord.",
+                joinDiscordNow: "Sertai Sekarang",
+                chatbotTitle: "Chatbot Paong 2.0",
+                chatbotSubtitle: "Ajukan soalan anda dan dapatkan jawapan segera daripada pembantu AI kami.",
+                // Course titles and descriptions (32 courses)
+                course1Title: "Asas Kewangan Peribadi",
+                course1Desc: "Pelajari cara mengurus wang, menyimpan dan melabur untuk masa depan anda.",
+                course2Title: "Pelaburan Saham untuk Pemula",
+                course2Desc: "Panduan lengkap untuk memulakan pelaburan di pasaran saham.",
+                course3Title: "Pengenalan kepada Mata Wang Kripto",
+                course3Desc: "Fahami asas Bitcoin, Ethereum dan aset digital lain.",
+                course4Title: "Mikroekonomi Lanjutan",
+                course4Desc: "Analisis mendalam tentang tingkah laku pengguna, pengeluar, dan struktur pasaran.",
+                course5Title: "Makroekonomi Global",
+                course5Desc: "Memahami dasar monetari dan fiskal dalam konteks ekonomi global.",
+                course6Title: "Pengurusan Portfolio",
+                course6Desc: "Strategi pengoptimuman pelaburan dan pengurusan risiko portfolio.",
+                course7Title: "Analisis Penyata Kewangan",
+                course7Desc: "Membaca dan menafsirkan penyata kewangan untuk keputusan pelaburan.",
+                course8Title: "Pasaran Bon dan Derivatif",
+                course8Desc: "Kajian instrumen hutang, opsyen, dan kontrak niaga hadapan.",
+                course9Title: "Kewangan Korporat",
+                course9Desc: "Keputusan pembiayaan, pelaburan, dan dividen korporat.",
+                course10Title: "Ekonomi Pembangunan",
+                course10Desc: "Teori dan amalan pembangunan ekonomi di negara membangun.",
+                course11Title: "Ekonometrik",
+                course11Desc: "Penggunaan kaedah statistik untuk menganalisis data ekonomi.",
+                course12Title: "Kewangan Tingkah Laku",
+                course12Desc: "Pengaruh psikologi terhadap keputusan pelaburan dan pasaran.",
+                course13Title: "Undang-undang dan Peraturan Kewangan",
+                course13Desc: "Rangka kerja undang-undang yang mengawal pasaran dan institusi kewangan.",
+                course14Title: "Kewangan Antarabangsa",
+                course14Desc: "Aliran modal global, kadar pertukaran, dan pasaran kewangan antarabangsa.",
+                course15Title: "Pengurusan Risiko Kewangan",
+                course15Desc: "Pengenalpastian, pengukuran, dan mitigasi risiko dalam kewangan.",
+                course16Title: "Pelaburan Alternatif",
+                course16Desc: "Memahami pelaburan di luar aset tradisional seperti hartanah dan dana lindung nilai.",
+                course17Title: "Blockchain dan Kewangan Terdesentralisasi (DeFi)",
+                course17Desc: "Aplikasi teknologi blockchain dalam ekosistem kewangan baharu.",
+                course18Title: "Analisis Pasaran Komoditi",
+                course18Desc: "Dinamik harga, penawaran, dan permintaan di pasaran komoditi global.",
+                course19Title: "Perancangan dan Strategi Cukai",
+                course19Desc: "Memahami implikasi cukai dan strategi untuk meminimumkan liabiliti.",
+                course20Title: "Etika dalam Kewangan",
+                course20Desc: "Prinsip etika dan tanggungjawab sosial dalam industri kewangan.",
+                course21Title: "Penilaian Aset",
+                course21Desc: "Kaedah dan teknik untuk menentukan nilai saksama aset kewangan.",
+                course22Title: "Pasaran Wang dan Perbankan",
+                course22Desc: "Kajian institusi kewangan, kadar faedah, dan dasar monetari.",
+                course23Title: "Pengurusan Kekayaan",
+                course23Desc: "Strategi perancangan kewangan komprehensif untuk individu berpendapatan tinggi.",
+                course24Title: "Analisis Kredit",
+                course24Desc: "Menilai kelayakan kredit syarikat dan individu.",
+                course25Title: "Kewangan Awam",
+                course25Desc: "Peranan kerajaan dalam ekonomi, cukai, dan perbelanjaan awam.",
+                course26Title: "Ekonomi Alam Sekitar",
+                course26Desc: "Hubungan antara ekonomi dan alam sekitar, serta dasar kelestarian.",
+                course27Title: "Ekonomi Kesihatan",
+                course27Desc: "Analisis ekonomi dalam sektor penjagaan kesihatan dan dasar kesihatan.",
+                course28Title: "Ekonomi Buruh",
+                course28Desc: "Dinamik pasaran buruh, upah, dan pengangguran.",
+                course29Title: "Ekonomi Pertanian",
+                course29Desc: "Analisis ekonomi dalam sektor pertanian dan dasar makanan.",
+                course30Title: "Ekonomi Industri",
+                course30Desc: "Struktur pasaran, tingkah laku firma, dan peraturan industri.",
+                course31Title: "Teori Permainan dalam Ekonomi",
+                course31Desc: "Penggunaan teori permainan untuk menganalisis interaksi strategik.",
+                course32Title: "Inovasi Kewangan",
+                course32Desc: "Kajian produk, perkhidmatan, dan teknologi kewangan baharu."
+            },
+            ru: {
+                appTitle: "Академия Paong",
+                navHome: "Главная",
+                navCourses: "Курсы",
+                navChatbot: "Чат-бот",
+                navContact: "Контакты",
+                loadingApp: "Загрузка Академии Paong...",
+                heroTitle1: "Революционное",
+                heroTitle2: "Обучение",
+                heroTitle3: "с помощью",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "Академия Paong предлагает обучение нового поколения на основе передовых технологий искусственного интеллекта Paong 2.0.",
+                exploreButton: "Исследовать курсы",
+                communityButton: "Сообщество Discord",
+                aiAssistant: "Помощник Paong 2.0",
+                aiGreeting: "Привет! Я Paong 2.0, ваш помощник в обучении. Я готов помочь объяснить концепции экономики, финансов и инвестиций простым и понятным языком.",
+                feature1Title: "Адаптивное обучение",
+                feature1Desc: "Paong 2.0 адаптирует материалы обучения под ваш уровень понимания и стиль обучения",
+                feature2Title: "Актуальный контент",
+                feature2Desc: "Учебные материалы постоянно обновляются с учетом последней информации и тенденций в экономике",
+                feature3Title: "Интерактивность",
+                feature3Desc: "Задавайте вопросы в любое время и получайте подробные объяснения от Paong 2.0",
+                backButton: "Вернуться на главную",
+                coursesTitle: "Рекомендуемые курсы",
+                coursesSubtitle: "Материалы предоставлены профессионалами для легкого понимания и углубленного обучения.",
+                startButton: "Начать обучение",
+                aiExplanation: "Объяснение от Paong 2.0",
+                loadingText: "Paong 2.0 создает учебный контент...",
+                contactTitle: "Свяжитесь с нами",
+                contactSubtitle: "Есть вопросы? Команда Академии Paong готова помочь",
+                contactInfo: "Контактная информация",
+                whatsapp: "WhatsApp",
+                sendMessage: "Отправить сообщение",
+                email: "Email",
+                sendEmail: "Отправить email",
+                discord: "Discord",
+                community: "Учебное сообщество",
+                joinCommunity: "Присоединиться",
+                sendMessageTitle: "Отправить сообщение",
+                fullName: "Полное имя",
+                message: "Сообщение",
+                sendButton: "Отправить сообщение",
+                footerDescription: "Бесплатная обучающая платформа на основе ИИ для всех",
+                copyright: "&copy; 2025 Академия Paong. Все права защищены.",
+                poweredBy: "Работает на Paong 2.0",
+                darkMode: "Темный режим",
+                languageLabel: "Язык:",
+                backToCourses: "Вернуться к курсам",
+                joinDiscord: "Присоединиться к Discord",
+                discordAdTitle: "Присоединяйтесь к нашему сообществу!",
+                discordAdText: "Получите поддержку, обсуждайте материалы и общайтесь с другими учащимися в Discord.",
+                joinDiscordNow: "Присоединиться сейчас",
+                chatbotTitle: "Чат-бот Paong 2.0",
+                chatbotSubtitle: "Задайте свои вопросы и получите мгновенные ответы от нашего ИИ-помощника.",
+                // Course titles and descriptions (32 courses)
+                course1Title: "Основы личных финансов",
+                course1Desc: "Научитесь управлять деньгами, копить и инвестировать в свое будущее.",
+                course2Title: "Инвестиции в акции для начинающих",
+                course2Desc: "Полное руководство по началу инвестирования на фондовом рынке.",
+                course3Title: "Введение в криптовалюты",
+                course3Desc: "Поймите основы Bitcoin, Ethereum и других цифровых активов.",
+                course4Title: "Продвинутая микроэкономика",
+                course4Desc: "Углубленный анализ поведения потребителей, производителей и рыночных структур.",
+                course5Title: "Глобальная макроэкономика",
+                course5Desc: "Понимание денежно-кредитной и фискальной политики в контексте мировой экономики.",
+                course6Title: "Управление портфелем",
+                course6Desc: "Стратегии оптимизации инвестиций и управления портфельными рисками.",
+                course7Title: "Анализ финансовой отчетности",
+                course7Desc: "Чтение и интерпретация финансовой отчетности для принятия инвестиционных решений.",
+                course8Title: "Рынки облигаций и деривативов",
+                course8Desc: "Изучение долговых инструментов, опционов и фьючерсных контрактов.",
+                course9Title: "Корпоративные финансы",
+                course9Desc: "Решения компании по финансированию, инвестициям и дивидендам.",
+                course10Title: "Экономика развития",
+                course10Desc: "Теории и практики экономического развития в развивающихся странах.",
+                course11Title: "Эконометрика",
+                course11Desc: "Использование статистических методов для анализа экономических данных.",
+                course12Title: "Поведенческие финансы",
+                course12Desc: "Влияние психологии на инвестиционные решения и рынки.",
+                course13Title: "Финансовое право и регулирование",
+                course13Desc: "Правовая база, регулирующая финансовые рынки и учреждения.",
+                course14Title: "Международные финансы",
+                course14Desc: "Глобальные потоки капитала, обменные курсы и международные финансовые рынки.",
+                course15Title: "Управление финансовыми рисками",
+                course15Desc: "Выявление, измерение и снижение рисков в финансах.",
+                course16Title: "Альтернативные инвестиции",
+                course16Desc: "Понимание инвестиций, помимо традиционных активов, таких как недвижимость и хедж-фонды.",
+                course17Title: "Блокчейн и децентрализованные финансы (DeFi)",
+                course17Desc: "Применение технологии блокчейн в новых финансовых экосистемах.",
+                course18Title: "Анализ товарных рынков",
+                course18Desc: "Ценовая динамика, предложение и спрос на мировых товарных рынках.",
+                course19Title: "Налоговое планирование и стратегии",
+                course19Desc: "Понимание налоговых последствий и стратегий для минимизации обязательств.",
+                course20Title: "Этика в финансах",
+                course20Desc: "Этичные принципы и социальная ответственность в финансовой индустрии.",
+                course21Title: "Оценка активов",
+                course21Desc: "Методы и приемы определения справедливой стоимости финансовых активов.",
+                course22Title: "Денежные рынки и банковское дело",
+                course22Desc: "Изучение финансовых учреждений, процентных ставок и денежно-кредитной политики.",
+                course23Title: "Управление капиталом",
+                course23Desc: "Комплексные стратегии финансового планирования для состоятельных людей.",
+                course24Title: "Кредитный анализ",
+                course24Desc: "Оценка кредитоспособности компаний и частных лиц.",
+                course25Title: "Государственные финансы",
+                course25Desc: "Роль правительства в экономике, налогообложении и государственных расходах.",
+                course26Title: "Экологическая экономика",
+                course26Desc: "Взаимосвязь между экономикой и окружающей средой, а также политика устойчивого развития.",
+                course27Title: "Экономика здравоохранения",
+                course27Desc: "Экономический анализ в секторе здравоохранения и политика здравоохранения.",
+                course28Title: "Экономика труда",
+                course28Desc: "Динамика рынков труда, заработной платы и безработицы.",
+                course29Title: "Экономика сельского хозяйства",
+                course29Desc: "Экономический анализ в сельскохозяйственном секторе и продовольственная политика.",
+                course30Title: "Промышленная экономика",
+                course30Desc: "Рыночные структуры, поведение фирм и регулирование отрасли.",
+                course31Title: "Теория игр в экономике",
+                course31Desc: "Использование теории игр для анализа стратегических взаимодействий.",
+                course32Title: "Финансовые инновации",
+                course32Desc: "Изучение новых финансовых продуктов, услуг и технологий."
+            },
+            ja: {
+                appTitle: "パオンアカデミー",
+                navHome: "ホーム",
+                navCourses: "コース",
+                navContact: "お問い合わせ", // Removed chatbot nav
+                loadingApp: "パオンアカデミーを読み込み中...",
+                heroTitle1: "革命的",
+                heroTitle2: "学習体験",
+                heroTitle3: "パワードバイ",
+                heroTitle4: "Paong 2.0",
+                heroDescription: "パオンアカデミーは、Paong 2.0の最先端人工知能技術を活用した次世代の学習体験を提供します。",
+                exploreButton: "コースを探す",
+                communityButton: "Discordコミュニティ",
+                aiAssistant: "Paong 2.0アシスタント",
+                aiGreeting: "こんにちは！私はPaong 2.0、あなたの学習アシスタントです。経済、金融、投資の概念を分かりやすく説明するお手伝いをします。",
+                feature1Title: "適応型学習",
+                feature1Desc: "Paong 2.0が学習教材を理解度と学習スタイルに合わせて調整します",
+                feature2Title: "最新コンテンツ",
+                feature2Desc: "教材は常に最新の経済情報とトレンドで更新されています",
+                feature3Title: "インタラクティブ",
+                feature3Desc: "いつでも質問し、Paong 2.0から詳細な説明を得られます",
+                backButton: "ホームに戻る",
+                coursesTitle: "おすすめコース",
+                coursesSubtitle: "専門家による教材で、分かりやすく深い学びを提供します。",
+                startButton: "学習を開始",
+                aiExplanation: "Paong 2.0による説明",
+                loadingText: "Paong 2.0が学習コンテンツを作成中...",
+                contactTitle: "お問い合わせ",
+                contactSubtitle: "質問がありますか？パオンアカデミーチームがサポートします",
+                contactInfo: "連絡先情報",
+                whatsapp: "WhatsApp",
+                sendMessage: "メッセージを送信",
+                email: "メール",
+                sendEmail: "メールを送信",
+                discord: "Discord",
+                community: "学習コミュニティ",
+                joinCommunity: "コミュニティに参加",
+                sendMessageTitle: "メッセージを送信",
+                fullName: "フルネーム",
+                message: "メッセージ",
+                sendButton: "送信",
+                footerDescription: "誰でも利用できる無料のAI学習プラットフォーム",
+                copyright: "&copy; 2025 パオンアカデミー。全著作権所有。",
+                poweredBy: "Paong 2.0搭載",
+                darkMode: "ダークモード",
+                languageLabel: "言語:",
+                backToCourses: "コース一覧に戻る",
+                joinDiscord: "Discordに参加",
+                discordAdTitle: "コミュニティに参加しましょう！",
+                discordAdText: "Discordでサポートを受けたり、資料を議論したり、他の学習者とつながりましょう。",
+                joinDiscordNow: "今すぐ参加",
+                chatbotTitle: "Paong 2.0 チャットボット",
+                chatbotSubtitle: "質問がありますか？AIアシスタントからすぐに回答を得られます。"
+            }
+        };
+
+        // Set initial language from localStorage or default to 'id'
+        let currentLanguage = localStorage.getItem('language') || 'id';
+        
+        // ====================================================================
+        // HELPER FUNCTIONS (TRANSLATION, THEME, NAVIGATION)
+        // ====================================================================
+
+        /**
+         * Applies translations to all elements with `data-i18n` attribute.
+         * Updates HTML direction for RTL languages (Arabic).
+         * @param {string} lang - The language code (e.g., 'en', 'id').
+         */
+        function applyTranslations(lang) {
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                        element.placeholder = translations[lang][key];
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            
+            // Update HTML direction for Arabic (RTL)
+            if (lang === 'ar') {
+                document.documentElement.dir = 'rtl';
+                document.body.classList.add('rtl');
+            } else {
+                document.documentElement.dir = 'ltr';
+                document.body.classList.remove('rtl');
+            }
+            document.documentElement.lang = lang; // Set HTML lang attribute
+            
+            // Save language preference
+            localStorage.setItem('language', lang);
+            currentLanguage = lang; // Update global language variable
+            
+            // Update language selectors
+            document.getElementById('languageSelector').value = lang;
+            document.getElementById('mobileLanguageSelector').value = lang;
+
+            // Update course titles and descriptions in the `courses` object
+            // This ensures `loadCourse` uses translated data before calling Gemini
+            updateCourseDataTranslations();
+
+            // Re-generate course content if we're on the course detail page
+            // This ensures AI-generated content also updates its language
+            if (!courseDetailSection.classList.contains('section-hidden') && currentCourseId) {
+                loadCourse(currentCourseId, true); // Pass true to force re-fetch
+            }
+        }
+
+        /**
+         * Toggles between light and dark themes.
+         */
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+
+            // Update icon visibility
+            moonIcon.classList.toggle('hidden', isDarkMode);
+            sunIcon.classList.toggle('hidden', !isDarkMode);
+            mobileMoonIcon.classList.toggle('hidden', isDarkMode);
+            mobileSunIcon.classList.toggle('hidden', !isDarkMode);
+        }
+
+        // DOM elements for sections
+        const homeSection = document.getElementById('homeSection');
+        const coursesSection = document.getElementById('coursesSection');
+        const courseDetailSection = document.getElementById('courseDetailSection');
+        const contactSection = document.getElementById('contactSection'); // Removed chatbot section
+        const loadingScreen = document.getElementById('loadingScreen'); // New loading screen element
+        
+        // Array to manage page history for back button functionality
+        let pageHistory = [];
+
+        /**
+         * Shows a specific section with a fade animation and manages page history.
+         * @param {HTMLElement} sectionToShow - The section element to display.
+         * @param {boolean} [addToHistory=true] - Whether to add the current section to history.
+         */
+        function showSection(sectionToShow, addToHistory = true) {
+            const allSections = [homeSection, coursesSection, courseDetailSection, contactSection]; // Removed chatbot section
+            const currentActiveSection = document.querySelector('.section-visible');
+            
+            // Hide all sections first
+            allSections.forEach(sec => {
+                if (sec !== sectionToShow) {
+                    sec.classList.remove('section-visible');
+                    sec.classList.add('section-hidden');
+                }
+            });
+
+            // Show the target section with a delay for fade-out effect
+            if (currentActiveSection && currentActiveSection !== sectionToShow) {
+                setTimeout(() => {
+                    sectionToShow.classList.remove('section-hidden');
+                    sectionToShow.classList.add('section-visible');
+                }, 500); // Match CSS transition duration
+            } else {
+                // If no active section or showing the same section, just make it visible immediately
+                sectionToShow.classList.remove('section-hidden');
+                sectionToShow.classList.add('section-visible');
+            }
+
+            // Manage page history
+            const sectionId = sectionToShow.id;
+            if (addToHistory) {
+                // Only add to history if it's a new page or not a direct back navigation
+                if (pageHistory.length === 0 || pageHistory[pageHistory.length - 1] !== sectionId) {
+                    pageHistory.push(sectionId);
+                }
+            } else if (pageHistory.length > 1 && pageHistory[pageHistory.length - 2] === sectionId) {
+                // This means we are truly going back, so pop the current page from history
+                pageHistory.pop();
+            } else if (pageHistory.length === 0) {
+                // Initial load, add home to history
+                pageHistory.push(sectionId);
+            }
+            
+            // Close mobile menu if open
+            document.getElementById('mobileMenu').classList.remove('translate-x-0');
+        }
+
+        /**
+         * Navigates back to the previous section in history.
+         */
+        function goBack() {
+            if (pageHistory.length > 1) {
+                pageHistory.pop(); // Remove current page from history
+                const previousSectionId = pageHistory[pageHistory.length - 1]; // Get the ID of the previous page
+                const previousSectionElement = document.getElementById(previousSectionId);
+                if (previousSectionElement) {
+                    showSection(previousSectionElement, false); // Show without adding to history again
+                } else {
+                    // Fallback if previous section element is not found (shouldn't happen with correct IDs)
+                    showSection(homeSection, false);
+                }
+            } else {
+                // If only one page in history (or none), go to home
+                showSection(homeSection, false);
+            }
+        }
+
+        // ====================================================================
+        // API INTEGRATION (PAONG 2.0 - powered by Gemini)
+        // ====================================================================
+        const apiKey = ''; // API Key should be left empty. It is automatically provided by the Canvas environment.
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        let currentCourseId = null; // Stores the ID of the currently viewed course
+        const courseContentCache = {}; // Cache for AI-generated content
+
+        // API status indicator elements
+        const apiStatus = document.getElementById('apiStatus');
+        
+        /**
+         * Tests the connection to the Paong 2.0 API (powered by Gemini) and updates the status indicator.
+         */
+        async function testGeminiConnection() {
+            apiStatus.className = 'api-status pending';
+            apiStatus.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke Paong 2.0...';
+            
+            try {
+                const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }) // Simple ping
+                });
+                
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    apiStatus.className = 'api-status connected';
+                    apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> Terhubung ke Paong 2.0';
+                    setTimeout(() => { apiStatus.style.display = 'none'; }, 3000); // Hide after 3 seconds
+                } else {
+                    throw new Error('Invalid response from API');
+                }
+            } catch (error) {
+                console.error('API connection error:', error);
+                apiStatus.className = 'api-status disconnected';
+                apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Gagal terhubung ke Paong 2.0';
+            }
+        }
+        
+        /**
+         * Generates course content using the Paong 2.0 API for a given course ID and language.
+         * @param {string} courseId - The ID of the course.
+         * @param {boolean} [forceRefetch=false] - Whether to force a new API call, ignoring cache.
+         */
+        async function generateCourseContent(courseId, forceRefetch = false) {
+            // Check cache first if not forcing a re-fetch
+            const cacheKey = `${courseId}-${currentLanguage}`;
+            if (courseContentCache[cacheKey] && !forceRefetch) {
+                aiResponse.innerHTML = marked.parse(courseContentCache[cacheKey]);
+                return;
+            }
+
+            // Show loading state
+            aiResponse.innerHTML = `
+                <div class="flex justify-center items-center h-64">
+                    <div class="text-center">
+                        <div class="loading-spinner mb-4 mx-auto"></div>
+                        <p class="text-slate-600 dark:text-slate-400">${translations[currentLanguage]['loadingText']}</p>
+                    </div>
+                </div>
+            `;
+
+            const courseTitleText = courses[courseId].title; // Get translated title from updated courses object
+            
+            // Prompt for Gemini API - requesting structured and easy-to-read content
+            // Note: The prompt still refers to "Gemini AI" as it's the underlying model.
+            // The user-facing text is handled by the translations object.
+            const prompt = `Anda adalah asisten pembelajaran untuk Academy Paong. 
+            Buatlah materi pembelajaran tentang "${courseTitleText}" dalam bahasa ${currentLanguage}. 
+            Materi harus mencakup pengertian dasar, konsep penting, dan contoh praktis. 
+            Sajikan dalam format Markdown dengan penggunaan judul (##), subjudul (###), paragraf, dan daftar poin (* atau -). 
+            Gunakan bahasa yang ramah dan mudah dipahami oleh pemula, seperti gaya pembelajaran di universitas Amerika.`;
+            
+            try {
+                const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+                    const text = data.candidates[0].content.parts[0].text;
+                    courseContentCache[cacheKey] = text; // Store generated content in cache
+                    aiResponse.innerHTML = marked.parse(text); // Parse Markdown to HTML
+                } else {
+                    throw new Error('Invalid response from API or no content generated.');
+                }
+            } catch (error) {
+                console.error('Error generating content:', error);
+                aiResponse.innerHTML = `
+                    <div class="bg-red-100 dark:bg-red-900/20 p-4 rounded-lg text-red-700 dark:text-red-300">
+                        <p>${translations[currentLanguage]['aiGreeting']}</p>
+                        <p class="mt-2"><strong>Error:</strong> Gagal memuat konten pembelajaran. Silakan coba lagi nanti.</p>
+                        <p class="mt-1 text-sm">Detail: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // ====================================================================
+        // COURSE DATA & LOADING
+        // ====================================================================
+        // Course data structure (titles/descriptions will be updated by applyTranslations)
+        // Expanded to include 30+ courses
+        const courses = {
+            'personal-finance': { id: 'course1', title: '', description: '' },
+            'stock-investing': { id: 'course2', title: '', description: '' },
+            'cryptocurrency': { id: 'course3', title: '', description: '' },
+            'advanced-microeconomics': { id: 'course4', title: '', description: '' },
+            'global-macroeconomics': { id: 'course5', title: '', description: '' },
+            'portfolio-management': { id: 'course6', title: '', description: '' },
+            'financial-statement-analysis': { id: 'course7', title: '', description: '' },
+            'bond-derivatives-markets': { id: 'course8', title: '', description: '' },
+            'corporate-finance': { id: 'course9', title: '', description: '' },
+            'development-economics': { id: 'course10', title: '', description: '' },
+            'econometrics': { id: 'course11', title: '', description: '' },
+            'behavioral-finance': { id: 'course12', title: '', description: '' },
+            'financial-law-regulation': { id: 'course13', title: '', description: '' },
+            'international-finance': { id: 'course14', title: '', description: '' },
+            'financial-risk-management': { id: 'course15', title: '', description: '' },
+            'alternative-investments': { id: 'course16', title: '', description: '' },
+            'blockchain-defi': { id: 'course17', title: '', description: '' },
+            'commodity-market-analysis': { id: 'course18', title: '', description: '' },
+            'tax-planning-strategies': { id: 'course19', title: '', description: '' },
+            'ethics-in-finance': { id: 'course20', title: '', description: '' },
+            'asset-valuation': { id: 'course21', title: '', description: '' },
+            'money-markets-banking': { id: 'course22', title: '', description: '' },
+            'wealth-management': { id: 'course23', title: '', description: '' },
+            'credit-analysis': { id: 'course24', title: '', description: '' },
+            'public-finance': { id: 'course25', title: '', description: '' },
+            'environmental-economics': { id: 'course26', title: '', description: '' },
+            'health-economics': { id: 'course27', title: '', description: '' },
+            'labor-economics': { id: 'course28', title: '', description: '' },
+            'agricultural-economics': { id: 'course29', title: '', description: '' },
+            'industrial-economics': { id: 'course30', title: '', description: '' },
+            'game-theory-economics': { id: 'course31', title: '', description: '' },
+            'financial-innovation': { id: 'course32', title: '', description: '' }
+        };
+
+        /**
+         * Updates the `courses` object with current language translations.
+         * This is crucial before `loadCourse` is called.
+         */
+        function updateCourseDataTranslations() {
+            // Loop through all courses and update their titles and descriptions
+            let courseIndex = 1;
+            for (const key in courses) {
+                if (courses.hasOwnProperty(key)) {
+                    const titleKey = `course${courseIndex}Title`;
+                    const descKey = `course${courseIndex}Desc`;
+                    if (translations[currentLanguage][titleKey]) {
+                        courses[key].title = translations[currentLanguage][titleKey];
+                        courses[key].description = translations[currentLanguage][descKey];
+                    }
+                    courseIndex++;
+                }
+            }
+            renderCourseCards(); // Re-render course cards after translations are updated
+        }
+
+        // Element to display course cards
+        const coursesGrid = document.querySelector('#coursesSection .grid');
+
+        /**
+         * Dynamically generates and renders course cards into the courses section.
+         */
+        function renderCourseCards() {
+            coursesGrid.innerHTML = ''; // Clear existing cards
+            for (const courseId in courses) {
+                const course = courses[courseId];
+                // You can add more varied icons here if needed, e.g., based on courseId
+                const iconClass = getCourseIcon(courseId); // A helper function to get appropriate icon
+                const cardHtml = `
+                    <div class="course-card bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg">
+                        <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
+                            <i class="${iconClass} text-blue-600 dark:text-blue-400 text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-xl mb-3">${course.title}</h3>
+                        <p class="text-slate-600 dark:text-slate-400 mb-6">${course.description}</p>
+                        <button class="learn-btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg" data-course="${courseId}">
+                            ${translations[currentLanguage]['startButton']}
+                        </button>
+                    </div>
+                `;
+                coursesGrid.insertAdjacentHTML('beforeend', cardHtml);
+            }
+            // Re-attach event listeners to newly rendered buttons
+            document.querySelectorAll('.learn-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const courseId = this.getAttribute('data-course');
+                    showSection(courseDetailSection); // Navigate to course detail page
+                    loadCourse(courseId); // Load course content
+                });
+            });
+        }
+
+        /**
+         * Helper function to return a relevant icon class for a given course ID.
+         * You can expand this mapping for more specific icons.
+         */
+        function getCourseIcon(courseId) {
+            const iconMap = {
+                'personal-finance': 'fas fa-wallet',
+                'stock-investing': 'fas fa-chart-line',
+                'cryptocurrency': 'fab fa-bitcoin',
+                'advanced-microeconomics': 'fas fa-chart-pie',
+                'global-macroeconomics': 'fas fa-globe',
+                'portfolio-management': 'fas fa-briefcase',
+                'financial-statement-analysis': 'fas fa-file-invoice-dollar',
+                'bond-derivatives-markets': 'fas fa-handshake',
+                'corporate-finance': 'fas fa-building',
+                'development-economics': 'fas fa-leaf',
+                'econometrics': 'fas fa-calculator',
+                'behavioral-finance': 'fas fa-brain',
+                'financial-law-regulation': 'fas fa-gavel',
+                'international-finance': 'fas fa-plane',
+                'financial-risk-management': 'fas fa-shield-alt',
+                'alternative-investments': 'fas fa-lightbulb',
+                'blockchain-defi': 'fas fa-link',
+                'commodity-market-analysis': 'fas fa-wheat-alt',
+                'tax-planning-strategies': 'fas fa-receipt',
+                'ethics-in-finance': 'fas fa-balance-scale',
+                'asset-valuation': 'fas fa-coins',
+                'money-markets-banking': 'fas fa-money-check-alt',
+                'wealth-management': 'fas fa-piggy-bank',
+                'credit-analysis': 'fas fa-clipboard-check',
+                'public-finance': 'fas fa-landmark',
+                'environmental-economics': 'fas fa-tree',
+                'health-economics': 'fas fa-heartbeat',
+                'labor-economics': 'fas fa-people-carry-box',
+                'agricultural-economics': 'fas fa-tractor',
+                'industrial-economics': 'fas fa-industry',
+                'game-theory-economics': 'fas fa-dice',
+                'financial-innovation': 'fas fa-flask',
+                // Default icon if not found
+                'default': 'fas fa-book' 
+            };
+            return iconMap[courseId] || iconMap['default'];
+        }
+
+
+        // Elements for course detail section
+        const aiResponse = document.getElementById('aiResponse');
+        const courseTitleElement = document.getElementById('courseTitle');
+        const courseDescriptionElement = document.getElementById('courseDescription');
+
+        /**
+         * Loads and displays content for a specific course.
+         * @param {string} courseId - The ID of the course to load.
+         * @param {boolean} [forceRefetch=false] - Whether to force a new API call for content.
+         */
+        function loadCourse(courseId, forceRefetch = false) {
+            currentCourseId = courseId; // Set current course ID
+
+            const course = courses[courseId];
+            if (!course) {
+                console.error(`Course with ID ${courseId} not found.`);
+                return;
+            }
+            
+            // Update course header
+            courseTitleElement.textContent = course.title;
+            courseDescriptionElement.textContent = course.description;
+            
+            // Generate content (will use cache or fetch from API)
+            generateCourseContent(courseId, forceRefetch);
+        }
+
+        // ====================================================================
+        // EVENT LISTENERS
+        // ====================================================================
+
+        // Header Navigation Buttons
+        document.getElementById('headerAppTitle').addEventListener('click', () => showSection(homeSection));
+        document.getElementById('homeBtn').addEventListener('click', () => showSection(homeSection));
+        document.getElementById('coursesBtn').addEventListener('click', () => showSection(coursesSection));
+        document.getElementById('contactBtn').addEventListener('click', () => showSection(contactSection)); // Removed chatbot button
+        document.getElementById('exploreCoursesBtn').addEventListener('click', () => showSection(coursesSection));
+
+        // Back Buttons
+        document.getElementById('backToHomeBtn').addEventListener('click', goBack);
+        document.getElementById('backToCoursesBtn').addEventListener('click', goBack);
+        document.getElementById('backToHomeFromContactBtn').addEventListener('click', goBack); // Removed chatbot back button
+
+        // Mobile Menu Buttons
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.add('translate-x-0'); // Show menu
+        });
+        document.getElementById('closeMobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.remove('translate-x-0'); // Hide menu
+        });
+        document.getElementById('mobileHomeBtn').addEventListener('click', () => {
+            showSection(homeSection);
+        });
+        document.getElementById('mobileCoursesBtn').addEventListener('click', () => {
+            showSection(coursesSection);
+        });
+        document.getElementById('mobileContactBtn').addEventListener('click', () => { // Removed chatbot button
+            showSection(contactSection);
+        });
+
+        // Language Selectors
+        document.getElementById('languageSelector').addEventListener('change', function() {
+            applyTranslations(this.value);
+        });
+        document.getElementById('mobileLanguageSelector').addEventListener('change', function() {
+            applyTranslations(this.value);
+        });
+
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('mobileThemeToggle').addEventListener('click', toggleTheme);
+
+        // Course Learning Buttons are now attached dynamically in renderCourseCards()
+
+        // ====================================================================
+        // INITIALIZATION ON DOM CONTENT LOADED
+        // ====================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply initial theme (from localStorage or system preference)
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (savedTheme === null && prefersDarkScheme.matches)) {
+                document.documentElement.classList.add('dark');
+                // Update icons for initial theme if not already done by applyTranslations
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+                mobileMoonIcon.classList.add('hidden');
+                mobileSunIcon.classList.remove('hidden');
+            }
+
+            // Apply initial translations based on currentLanguage
+            // This also updates the `courses` object with translated titles/descriptions
+            applyTranslations(currentLanguage);
+
+            // Hide all main sections initially, only loading screen visible
+            const allMainSections = [homeSection, coursesSection, contactSection]; // Removed chatbot section
+            allMainSections.forEach(sec => sec.classList.add('section-hidden'));
+            loadingScreen.classList.remove('hidden'); // Ensure loading screen is visible
+
+            // After a delay, hide loading screen and show home section
+            // Adjusted delay to allow text reveal animation to complete (1.0s for text + 0.5s fade out)
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                // Ensure homeSection is visible after loading
+                homeSection.classList.remove('section-hidden');
+                homeSection.classList.add('section-visible');
+                pageHistory = ['homeSection']; // Initialize history after loading
+            }, 4000); // Total 4 seconds for loading animation (adjust as needed)
+
+            // Test Paong 2.0 API connection
+            testGeminiConnection();
+
+            // --- SCRIPT UNTUK ANIMASI 3D DENGAN THREE.JS (Loading Screen) ---
+            
+            // 1. Setup dasar: scene, camera, dan renderer
+            const scene = new THREE.Scene();
+            const loadingCanvas = document.getElementById('loading-bg-canvas');
+            const camera = new THREE.PerspectiveCamera(75, loadingCanvas.clientWidth / loadingCanvas.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({
+                canvas: loadingCanvas,
+                alpha: true // Membuat background canvas transparan
+            });
+
+            renderer.setSize(loadingCanvas.clientWidth, loadingCanvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // 2. Membuat objek 3D (Torus/Donat)
+            const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+            // Material dengan properti metalik yang akan bereaksi terhadap cahaya
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x6366f1, // Warna ungu-biru
+                metalness: 0.7,
+                roughness: 0.2 
+            });
+            const torus = new THREE.Mesh(geometry, material);
+            scene.add(torus);
+
+            // 3. Menambahkan cahaya
+            // PointLight untuk memberikan highlight
+            const pointLight1 = new THREE.PointLight(0xffffff, 2);
+            pointLight1.position.set(20, 20, 20);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xa5b4fc, 2);
+            pointLight2.position.set(-20, -20, 15);
+            scene.add(pointLight2);
+
+            // AmbientLight untuk menerangi seluruh scene secara merata
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            // Mengatur posisi awal kamera
+            camera.position.z = 30;
+
+            // 4. Loop Animasi
+            function animateLoading() {
+                requestAnimationFrame(animateLoading);
+
+                // Membuat objek berputar
+                torus.rotation.x += 0.001;
+                torus.rotation.y += 0.005;
+
+                // Merender scene dari sudut pandang kamera
+                renderer.render(scene, camera);
+            }
+
+            // 5. Menangani perubahan ukuran window (agar responsif)
+            window.addEventListener('resize', () => {
+                // Update ukuran renderer
+                renderer.setSize(loadingCanvas.clientWidth, loadingCanvas.clientHeight);
+                // Update aspect ratio kamera
+                camera.aspect = loadingCanvas.clientWidth / loadingCanvas.clientHeight;
+                camera.updateProjectionMatrix();
+            });
+
+            // Memulai animasi loading
+            animateLoading();
+
+            // --- SCRIPT UNTUK ANIMASI TEKS LOGO ---
+            const loadingMainTextElement = document.getElementById('loading-main-text');
+            const loadingByPaongTextElement = document.getElementById('loading-by-paong-text');
+
+            // Function to split text into spans for animation
+            function animateTextSpans(element, text, baseDelay) {
+                element.innerHTML = ''; // Clear existing content
+                text.split('').forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.innerHTML = char === ' ' ? '&nbsp;' : char;
+                    span.style.setProperty('--delay', `${baseDelay + index * 0.05}s`); // Staggered delay
+                    element.appendChild(span);
+                });
+            }
+
+            // Animate "Academy Paong"
+            animateTextSpans(loadingMainTextElement, "Academy Paong", 0.0); // Start immediately with 0.0s base delay
+
+            // Animate "By Paong"
+            animateTextSpans(loadingByPaongTextElement, "By Paong", 1.0); // Start after "Academy Paong" has revealed
+        });
+    </script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>
